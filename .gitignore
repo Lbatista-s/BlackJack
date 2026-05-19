@@ -1,0 +1,26 @@
+.DS_Store
+.launcher/
+server/.npm-cache/
+
+# Dependency directories
+node_modules/
+**/node_modules/
+
+# Production builds
+dist/
+**/dist/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Database temp/journal files
+*.db-shm
+*.db-wal
+server/data/*.db-shm
+server/data/*.db-wal
+
+# Logs
+logs/
+*.log
