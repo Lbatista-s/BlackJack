@@ -8,7 +8,7 @@ The active backend now uses PostgreSQL through the `pg` driver. The legacy SQLit
 
 - Legacy SQLite file: `server/data/blackjack-leaderboard.db`
 - Active PostgreSQL database: `blackjack`
-- Active connection string in local setup: `postgresql://luisbatista@localhost:5432/blackjack`
+- Active connection string in local setup: `postgresql://<your-pg-user>@localhost:5432/blackjack`
 
 ## What changed
 
@@ -42,7 +42,7 @@ This script:
 
 ```env
 PORT=5174
-DATABASE_URL=postgresql://luisbatista@localhost:5432/blackjack
+DATABASE_URL=postgresql://<your-pg-user>@localhost:5432/blackjack
 SQLITE_PATH=./data/blackjack-leaderboard.db
 ```
 
@@ -107,7 +107,7 @@ Expected `/health` response now includes:
 ```json
 {
   "status": "ok",
-  "storage": "postgresql://luisbatista@localhost:5432/blackjack",
+  "storage": "postgresql://<your-pg-user>@localhost:5432/blackjack",
   "engine": "postgresql"
 }
 ```
@@ -134,7 +134,7 @@ Connection values:
 - Host: `localhost`
 - Port: `5432`
 - Database: `blackjack`
-- User: `luisbatista`
+- User: `<your-pg-user>`
 
 ### Legacy SQLite database
 

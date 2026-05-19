@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import Card from './Card';
 import { createShoe } from '../utils/cards';
@@ -11,7 +11,7 @@ const createPlayer = (saved, seatId) => ({
   id: seatId,
   userId: saved?.id ?? `seat-${seatId}`,
   name: saved?.name ?? `Player ${seatId}`,
-  bank: Number(saved?.bank) ?? START_BANK,
+  bank: (saved && saved.bank !== undefined && saved.bank !== null) ? Number(saved.bank) : START_BANK,
   stake: DEFAULT_STAKE,
   cards: [],
   roundStake: 0,
@@ -46,14 +46,11 @@ const HoldemTable = ({
 
   const updateStatus = (text) => onStatus && onStatus(text);
 
-  useEffect(() => {
-    if (!savedPlayers?.length) {
-      setSelectedSavedId('');
-      return;
-    }
-    if (!savedPlayers.some((player) => String(player.id) === selectedSavedId)) {
-      setSelectedSavedId(String(savedPlayers[0].id));
-    }
+  const effectiveSavedId = useMemo(() => {
+    if (!savedPlayers?.length) return '';
+    return savedPlayers.some((player) => String(player.id) === selectedSavedId)
+      ? selectedSavedId
+      : String(savedPlayers[0].id);
   }, [savedPlayers, selectedSavedId]);
 
   const finalizeRound = (snapshot, winnerIds, summary) => {
@@ -142,12 +139,13 @@ const HoldemTable = ({
   };
 
   const addPlayer = () => {
-    if (!selectedSavedId) {
+    const targetId = effectiveSavedId;
+    if (!targetId) {
       updateStatus('Select a saved player first.');
       return;
     }
     const saved = savedPlayers?.find(
-      (player) => String(player.id) === selectedSavedId
+      (player) => String(player.id) === targetId
     );
     if (!saved) {
       updateStatus('Saved player not found.');
@@ -458,7 +456,7 @@ const HoldemTable = ({
         </button>
         <div className="add-player">
           <select
-            value={selectedSavedId}
+            value={effectiveSavedId}
             onChange={(event) => setSelectedSavedId(event.target.value)}
             disabled={!savedPlayers?.length}
           >

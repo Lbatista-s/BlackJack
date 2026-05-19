@@ -1,27 +1,25 @@
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 
 function Scoreboard({ scores, loading, onRefresh, players, onAddChips }) {
   const [selectedPlayer, setSelectedPlayer] = useState('');
   const [chipAmount, setChipAmount] = useState('');
 
-  useEffect(() => {
-    if (!players || players.length === 0) {
-      setSelectedPlayer('');
-      return;
-    }
-    if (!players.some((player) => String(player.id) === selectedPlayer)) {
-      setSelectedPlayer(String(players[0].id));
-    }
+  const effectiveSelectedPlayer = useMemo(() => {
+    if (!players || players.length === 0) return '';
+    return players.some((player) => String(player.id) === selectedPlayer)
+      ? selectedPlayer
+      : String(players[0].id);
   }, [players, selectedPlayer]);
 
   const handleTopUp = (event) => {
     event.preventDefault();
-    if (!onAddChips || !selectedPlayer) return;
+    const targetPlayerId = effectiveSelectedPlayer;
+    if (!onAddChips || !targetPlayerId) return;
     const numeric = Number(chipAmount);
     if (!Number.isFinite(numeric) || numeric <= 0) return;
-    const chosen = players?.find((player) => String(player.id) === selectedPlayer);
-    const resolvedId = chosen ? chosen.id : selectedPlayer;
+    const chosen = players?.find((player) => String(player.id) === targetPlayerId);
+    const resolvedId = chosen ? chosen.id : targetPlayerId;
     onAddChips(resolvedId, numeric);
     setChipAmount('');
   };
@@ -35,7 +33,7 @@ function Scoreboard({ scores, loading, onRefresh, players, onAddChips }) {
         </div>
         <form onSubmit={handleTopUp}>
           <select
-            value={selectedPlayer}
+            value={effectiveSelectedPlayer}
             onChange={(event) => setSelectedPlayer(event.target.value)}
             disabled={!players || players.length === 0 || !onAddChips}
           >

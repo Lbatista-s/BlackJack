@@ -32,7 +32,7 @@ const createPlayer = (saved, seatId) => ({
   id: seatId,
   userId: saved?.id ?? `seat-${seatId}`,
   name: saved?.name ?? `Player ${seatId}`,
-  bank: Number(saved?.bank) ?? START_BANK,
+  bank: (saved && saved.bank !== undefined && saved.bank !== null) ? Number(saved.bank) : START_BANK,
   baseBet: DEFAULT_BET,
   hands: [createHand(DEFAULT_BET)],
   wager: 0,
@@ -64,14 +64,11 @@ function BlackjackTable({
 
   const remainingDecks = useMemo(() => (shoe.length / 52).toFixed(1), [shoe]);
 
-  useEffect(() => {
-    if (!savedPlayers?.length) {
-      setSelectedSavedId('');
-      return;
-    }
-    if (!savedPlayers.some((player) => String(player.id) === selectedSavedId)) {
-      setSelectedSavedId(String(savedPlayers[0].id));
-    }
+  const effectiveSavedId = useMemo(() => {
+    if (!savedPlayers?.length) return '';
+    return savedPlayers.some((player) => String(player.id) === selectedSavedId)
+      ? selectedSavedId
+      : String(savedPlayers[0].id);
   }, [savedPlayers, selectedSavedId]);
 
   const updateStatus = (text) => {
@@ -94,12 +91,13 @@ function BlackjackTable({
   };
 
   const addPlayer = () => {
-    if (!selectedSavedId) {
+    const targetId = effectiveSavedId;
+    if (!targetId) {
       updateStatus('Select a saved player first.');
       return;
     }
     const saved = savedPlayers?.find(
-      (player) => String(player.id) === selectedSavedId
+      (player) => String(player.id) === targetId
     );
     if (!saved) {
       updateStatus('Saved player not found.');
@@ -235,18 +233,14 @@ function BlackjackTable({
     return 'playing';
   };
 
-  const allHandsFinished = (playerList) =>
-    playerList.every((player) =>
-      player.hands.every((hand) => finishedStatuses.has(hand.status))
-    );
 
   const handleHit = (playerId, handId) => {
     if (!roundActive) return;
     setPlayers((prevPlayers) => {
       let nextShoe = [...shoe];
-      const updated = prevPlayers.map((player, pIndex) => {
+      const updated = prevPlayers.map((player) => {
         if (player.id !== playerId) return player;
-        const hands = player.hands.map((hand, hIndex) => {
+        const hands = player.hands.map((hand) => {
           if (hand.id !== handId) return hand;
           const draw = pullCard(nextShoe);
           nextShoe = draw.nextShoe;
@@ -368,7 +362,7 @@ function BlackjackTable({
         });
 
         const hands = [];
-        player.hands.forEach((hand, index) => {
+        player.hands.forEach((hand) => {
           if (hand.id === handId) {
             nextTurn = { playerIndex: pIdx, handIndex: hands.length };
             hands.push(newHandA, newHandB);
@@ -550,7 +544,7 @@ function BlackjackTable({
         </button>
         <div className="add-player">
           <select
-            value={selectedSavedId}
+            value={effectiveSavedId}
             onChange={(event) => setSelectedSavedId(event.target.value)}
             disabled={!savedPlayers?.length}
           >

@@ -351,22 +351,20 @@ button:disabled {
   width: 100%;
 }
 
-.dev-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: grid;
-  place-items: center;
-  z-index: 40;
+dialog.dev-panel {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(5, 10, 7, 0.98);
+  color: #eef2ff;
+  border-radius: 18px;
+  padding: 20px;
+  width: min(520px, 90vw);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+  outline: none;
 }
 
-.dev-panel {
-  width: min(520px, 90vw);
-  background: rgba(5, 10, 7, 0.95);
-  border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  padding: 20px;
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+dialog.dev-panel::backdrop {
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(3px);
 }
 
 .dev-header {
