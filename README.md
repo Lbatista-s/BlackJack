@@ -1,58 +1,140 @@
-# Blackjack & Hold’em web app (React + Node + PostgreSQL)
+# Blackjack & Hold'em — React + Node + PostgreSQL
 
-Multi-player blackjack (6-deck shoe with splits/doubles/bankrolls) plus a table for Texas Hold’em. Both games share minimalist SVG cards and post results to a PostgreSQL-backed leaderboard through the Node/Express API.
+Multi-player Blackjack (6-deck shoe with splits, doubles & bankrolls) plus a Texas Hold'em table. Both games share minimalist SVG cards and post results to a **PostgreSQL-backed leaderboard** through a Node/Express API.
 
-## Easiest way to launch on macOS
+---
 
-- Double-click `launch-blackjack.command`.
-- The launcher checks that PostgreSQL is available, launches the API and frontend for you, and opens the app in your browser at `http://127.0.0.1:5173`.
-- To stop both services later, double-click `stop-blackjack.command`.
-- Logs and PID files are stored in `.launcher/`.
+## Quickstart (macOS)
 
-## Run locally
+Double-click **`launch-blackjack.command`** in the project root.
 
-1) PostgreSQL
+The launcher will:
+1. Verify PostgreSQL is running (and start it via Homebrew if needed).
+2. Install missing `node_modules` in both `server/` and `client/`.
+3. Start the API on `http://localhost:5174`.
+4. Start the Vite dev server on `http://localhost:5173`.
+5. Open the app in your default browser automatically.
+
+To shut everything down: double-click **`stop-blackjack.command`**.  
+Logs and PID files live in `.launcher/`.
+
+---
+
+## Manual setup
+
+### 1 — PostgreSQL
+
+Make sure PostgreSQL is installed and running, then create the database:
+
 ```bash
 createdb blackjack
 ```
 
-2) API
+### 2 — API server
+
 ```bash
 cd server
-cp .env.example .env   # set DATABASE_URL for your local PostgreSQL user
+cp .env.example .env        # edit DATABASE_URL to match your local PG user
 npm install
-npm run migrate:sqlite # optional: import legacy SQLite data
-npm start              # defaults to http://localhost:5174
+npm start                   # http://localhost:5174
 ```
 
-3) Frontend
+The server creates the `players` and `scores` tables automatically on first run.
+
+**Optional** — import data from the legacy SQLite file:
+
+```bash
+npm run migrate:sqlite      # idempotent, safe to re-run
+```
+
+### 3 — Frontend
+
 ```bash
 cd client
 npm install
-npm run dev            # http://localhost:5173
+npm run dev                 # http://localhost:5173
 ```
 
-The UI expects `VITE_API_URL` (optional) to point at the API (defaults to `http://localhost:5174`).
+Set `VITE_API_URL` if the API is not on the default port:
 
-## Legacy SQLite data
+```bash
+VITE_API_URL=http://localhost:5174 npm run dev
+```
 
-- The previous SQLite file still exists at `server/data/blackjack-leaderboard.db`.
-- Use `cd server && npm run migrate:sqlite` to re-import data from SQLite into PostgreSQL.
-- The migration is idempotent, so you can run it again without duplicating rows.
+---
 
-## Migration notes
+## Database
 
-- Full migration notes are documented in `POSTGRESQL_MIGRATION.md`.
+The project uses **PostgreSQL** (via the `pg` driver) with two tables:
 
-## Deployment notes
+| Table | Description |
+|---|---|
+| `players` | Saved player profiles with name and chip balance |
+| `scores` | Cumulative leaderboard (net chips, wins, losses, pushes, rounds) |
 
-- Deploy the `server` folder to your Node host (Render/Fly/Heroku/etc.) with `npm start`. Set `PORT` and `DATABASE_URL` for your PostgreSQL instance.
-- Deploy the built frontend (`client/dist`) to a static host (Vercel/Netlify/S3). If the API is not on the same origin, set `VITE_API_URL` at build time: `VITE_API_URL=https://your-api.example.com npm run build`.
+### Inspect with DBeaver
 
-## Gameplay highlights
+1. Open DBeaver → **New Database Connection** → choose **PostgreSQL**.
+2. Fill in the connection details:
 
-- Blackjack: 6-deck shoe, hand-based turn order, double-down & split handling, bankroll tracking tied to saved user profiles, and centralized chip deposits.
-- Hold’em: automated pre-flop/flop/turn/river dealing, 7-card hand evaluation, fold/call/raise/all-in controls, pot splitting, and bankroll updates that persist per user.
-- Saved player roster: create/manage chip stacks in the Developer panel and seat any saved user via dropdowns in each game (no passwords needed).
-- Developer controls: lightweight admin overlay lets you add players and clear the leaderboard between sessions.
-- Minimalist SVG card faces/backs shipped in `client/src/assets`; cards overlap/animate like a real shoe while a floating leaderboard keeps cumulative net stats in SQLite.
+| Field | Value |
+|---|---|
+| Host | `localhost` |
+| Port | `5432` |
+| Database | `blackjack` |
+| Username | your local PostgreSQL user |
+| Password | *(leave empty for local installs)* |
+
+3. Click **Test Connection** — DBeaver will prompt you to download the driver if needed.
+4. Click **Finish**. Your tables appear under `blackjack → Schemas → public → Tables`.
+
+### Inspect from the terminal
+
+```bash
+psql -d blackjack
+
+-- useful queries
+SELECT * FROM players ORDER BY name;
+SELECT * FROM scores ORDER BY net DESC;
+\q
+```
+
+### Environment variables (`server/.env`)
+
+```env
+PORT=5174
+DATABASE_URL=postgresql://<your-pg-user>@localhost:5432/blackjack
+SQLITE_PATH=./data/blackjack-leaderboard.db   # only used by the migration script
+```
+
+Full migration notes are in [`POSTGRESQL_MIGRATION.md`](./POSTGRESQL_MIGRATION.md).
+
+---
+
+## Gameplay
+
+### Blackjack
+- 6-deck shoe with automatic reshuffling.
+- Full split and double-down support.
+- Bankroll tracking tied to saved player profiles.
+- Centralized chip deposit via the Scoreboard panel.
+
+### Texas Hold'em
+- Automated pre-flop → flop → turn → river dealing.
+- 7-card hand evaluation with pot splitting on ties.
+- Fold / call / raise / all-in controls.
+- Bankroll updates persist to PostgreSQL per player.
+
+### Shared features
+- Minimalist SVG card faces and backs (no external image dependencies).
+- Floating leaderboard with cumulative net stats across all sessions.
+- Developer panel: create/manage player profiles and reset the leaderboard between sessions.
+
+---
+
+## Deployment
+
+| Layer | How |
+|---|---|
+| **API** | Deploy `server/` to any Node host (Render, Fly, Railway, Heroku). Set `PORT` and `DATABASE_URL` for your hosted PostgreSQL instance. |
+| **Frontend** | Build with `npm run build` inside `client/`, then deploy `client/dist/` to a static host (Vercel, Netlify, S3). Set `VITE_API_URL=https://your-api.example.com` at build time if the API is on a different origin. |
